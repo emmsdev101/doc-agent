@@ -1,0 +1,30 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class ChatSession extends Model
+{
+    use HasUuids;
+
+    protected $fillable = [
+        'knowledge_base_id',
+        'origin',
+        'visitor_ip',
+        'user_agent',
+    ];
+
+    public function knowledgeBase(): BelongsTo
+    {
+        return $this->belongsTo(KnowledgeBase::class);
+    }
+
+    public function messages(): HasMany
+    {
+        return $this->hasMany(ChatMessage::class);
+    }
+}

@@ -1,0 +1,15 @@
+/vendor
+/node_modules
+/.env
+/public/hot
+/public/storage
+/public/build
+/public/widget.js
+/storage/*.key
+/.phpunit.result.cache
+/auth.json
+npm-debug.log
+yarn-error.log
+/.fleet
+/.idea
+/.vscode
