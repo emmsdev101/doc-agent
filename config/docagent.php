@@ -3,7 +3,7 @@
 return [
     'rag' => [
         'top_k' => (int) env('RAG_TOP_K', 5),
-        'min_similarity' => (float) env('RAG_MIN_SIMILARITY', 0.15),
+        'min_similarity' => (float) env('RAG_MIN_SIMILARITY', 0.08),
         'system_prompt' => 'You are a helpful knowledge-base assistant. Answer using only the provided context. If the context is missing or you are unsure, say you do not know. Do not invent facts.',
     ],
 

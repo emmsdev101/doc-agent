@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\Documents\DeleteDocumentAction;
 use App\Actions\Documents\UploadDocumentAction;
 use App\Http\Requests\Documents\StoreDocumentRequest;
+use App\Enums\DocumentStatus;
 use App\Jobs\ProcessDocumentJob;
 use App\Models\Document;
 use App\Models\KnowledgeBase;
@@ -29,9 +30,14 @@ class DocumentController extends Controller
         $this->authorize('update', $knowledgeBase);
         abort_unless($document->knowledge_base_id === $knowledgeBase->id, 404);
 
+        $document->forceFill([
+            'status' => DocumentStatus::Pending,
+            'error_message' => null,
+        ])->save();
+
         ProcessDocumentJob::dispatch($document);
 
-        return back()->with('success', 'Document re-queued for processing.');
+        return back()->with('success', 'Document re-queued for embedding.');
     }
 
     public function destroy(

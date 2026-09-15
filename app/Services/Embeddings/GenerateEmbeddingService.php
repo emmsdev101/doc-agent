@@ -20,14 +20,17 @@ final class GenerateEmbeddingService
      */
     public function embed(string $text): array
     {
-        return $this->embedMany([$text])[0];
+        return $this->embedMany(
+            [$text],
+            (string) config('services.embeddings.query_task', 'retrieval.query'),
+        )[0];
     }
 
     /**
      * @param  list<string>  $texts
      * @return list<list<float>>
      */
-    public function embedMany(array $texts): array
+    public function embedMany(array $texts, ?string $task = null): array
     {
         $texts = array_values($texts);
 
@@ -42,11 +45,12 @@ final class GenerateEmbeddingService
             return array_map(fn (string $text): array => $this->local->embed($text), $texts);
         }
 
+        $task ??= (string) config('services.embeddings.passage_task', 'retrieval.passage');
         $batchSize = max(1, (int) config('services.embeddings.batch_size', 16));
         $vectors = [];
 
         foreach (array_chunk($texts, $batchSize) as $batch) {
-            $vectors = array_merge($vectors, $this->embedRemoteBatch($batch));
+            $vectors = array_merge($vectors, $this->embedRemoteBatch($batch, $task));
         }
 
         return $vectors;
@@ -61,14 +65,23 @@ final class GenerateEmbeddingService
      * @param  list<string>  $batch
      * @return list<list<float>>
      */
-    private function embedRemoteBatch(array $batch): array
+    private function embedRemoteBatch(array $batch, string $task): array
     {
+        $payload = [
+            'model' => config('services.embeddings.model'),
+            'input' => $batch,
+        ];
+
+        if (str_contains((string) config('services.embeddings.base_url'), 'jina.ai')) {
+            $payload['task'] = $task;
+            $payload['dimensions'] = $this->dimensions();
+            $payload['normalized'] = true;
+            $payload['truncate'] = true;
+        }
+
         try {
             $response = $this->client->embeddings()
-                ->post('/embeddings', [
-                    'model' => config('services.embeddings.model'),
-                    'input' => $batch,
-                ])
+                ->post('/embeddings', $payload)
                 ->throw();
         } catch (RequestException $exception) {
             throw new RuntimeException(

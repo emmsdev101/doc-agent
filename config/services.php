@@ -33,5 +33,7 @@ return [
         'dimensions' => (int) env('EMBEDDING_DIMENSIONS', 1536),
         'batch_size' => (int) env('EMBEDDING_BATCH_SIZE', 16),
         'timeout' => 60,
+        'query_task' => env('EMBEDDING_QUERY_TASK', 'retrieval.query'),
+        'passage_task' => env('EMBEDDING_PASSAGE_TASK', 'retrieval.passage'),
     ],
 ];

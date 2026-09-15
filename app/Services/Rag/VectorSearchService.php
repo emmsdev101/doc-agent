@@ -2,6 +2,7 @@
 
 namespace App\Services\Rag;
 
+use App\Services\Embeddings\LocalEmbeddingGenerator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -13,20 +14,44 @@ final class VectorSearchService
      * @param  list<float>  $embedding
      * @return Collection<int, object>
      */
-    public function similarChunks(string $knowledgeBaseId, array $embedding, int $limit, float $minSimilarity): Collection
-    {
+    public function similarChunks(
+        string $knowledgeBaseId,
+        array $embedding,
+        int $limit,
+        float $minSimilarity,
+        ?string $queryText = null,
+    ): Collection {
+        $candidateLimit = max($limit * 10, 50);
         $rows = $this->usesPgVector()
-            ? $this->searchWithPgVector($knowledgeBaseId, $embedding, $limit)
-            : $this->searchInPhp($knowledgeBaseId, $embedding, $limit);
+            ? $this->searchWithPgVector($knowledgeBaseId, $embedding, $candidateLimit)
+            : $this->searchInPhp($knowledgeBaseId, $embedding, $candidateLimit);
 
-        return collect($rows)
-            ->map(function (object $row): object {
-                $row->similarity = (float) $row->similarity;
+        $scored = collect($rows)
+            ->map(function (object $row) use ($queryText): object {
+                $cosine = (float) $row->similarity;
+                $lexical = is_string($queryText)
+                    ? LocalEmbeddingGenerator::tokenRecall($queryText, (string) $row->content)
+                    : 0.0;
+                $row->similarity = max($cosine, $lexical);
                 $row->metadata = is_string($row->metadata) ? json_decode($row->metadata, true) : $row->metadata;
 
                 return $row;
             })
+            ->sortByDesc(fn (object $row): float => $row->similarity)
+            ->values();
+
+        $matched = $scored
             ->filter(fn (object $row): bool => $row->similarity >= $minSimilarity)
+            ->take($limit)
+            ->values();
+
+        if ($matched->isNotEmpty()) {
+            return $matched;
+        }
+
+        return $scored
+            ->filter(fn (object $row): bool => $row->similarity > 0)
+            ->take($limit)
             ->values();
     }
 

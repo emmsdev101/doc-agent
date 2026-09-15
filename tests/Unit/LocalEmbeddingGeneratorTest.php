@@ -22,4 +22,18 @@ class LocalEmbeddingGeneratorTest extends TestCase
         $this->assertEqualsWithDelta(1.0, sqrt($norm), 0.0001);
         $this->assertSame($vector, $generator->embed('refund policy for annual subscriptions'));
     }
+
+    public function test_token_recall_matches_names_split_across_hyphens(): void
+    {
+        $document = 'EMMANUEL-KATIPUNAN-RESUME.pdf Software Engineer PHP Laravel';
+
+        $this->assertGreaterThan(
+            0.9,
+            LocalEmbeddingGenerator::tokenRecall('Who is Emmanuel Katipunan', $document),
+        );
+        $this->assertGreaterThan(
+            0.4,
+            LocalEmbeddingGenerator::tokenRecall('What are the skills of Emmanuel Katipunan', $document),
+        );
+    }
 }

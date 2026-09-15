@@ -67,7 +67,8 @@ final class RagChatService
             $knowledgeBase->id,
             $embedding,
             (int) config('docagent.rag.top_k', 5),
-            (float) config('docagent.rag.min_similarity', 0.15),
+            (float) config('docagent.rag.min_similarity', 0.08),
+            $question,
         );
     }
 

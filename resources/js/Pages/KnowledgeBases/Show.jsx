@@ -11,11 +11,35 @@ export default function Show({ knowledgeBase, embedSnippet, appUrl }) {
             return undefined;
         }
 
-        const timer = setInterval(() => {
-            router.reload({ only: ['knowledgeBase', 'flash'] });
-        }, 4000);
+        let cancelled = false;
+        let timer;
 
-        return () => clearInterval(timer);
+        const poll = () => {
+            if (cancelled) {
+                return;
+            }
+
+            router.reload({
+                only: ['knowledgeBase', 'flash'],
+                preserveState: true,
+                preserveUrl: true,
+                replace: true,
+                onFinish: () => {
+                    if (cancelled) {
+                        return;
+                    }
+
+                    timer = window.setTimeout(poll, 4000);
+                },
+            });
+        };
+
+        timer = window.setTimeout(poll, 4000);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timer);
+        };
     }, [hasActiveJobs]);
 
     return (
@@ -75,7 +99,7 @@ export default function Show({ knowledgeBase, embedSnippet, appUrl }) {
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <StatusBadge status={document.status} />
-                                    {document.status === 'failed' && (
+                                    {['processed', 'failed'].includes(document.status) && (
                                         <button
                                             type="button"
                                             onClick={() =>
@@ -85,7 +109,7 @@ export default function Show({ knowledgeBase, embedSnippet, appUrl }) {
                                             }
                                             className="text-sm font-medium text-indigo-600"
                                         >
-                                            Retry
+                                            {document.status === 'failed' ? 'Retry' : 'Re-embed'}
                                         </button>
                                     )}
                                     <button
