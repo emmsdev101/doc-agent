@@ -80,10 +80,6 @@ Each knowledge base has a snippet:
 
 Restrict `allowed_origins` in knowledge-base settings. APIs live at `/api/v1/widget/{token}` and `/api/v1/chat` (CORS + origin check + rate limit).
 
-## Deploy notes
-
-Render (and similar hosts) wipe the local disk on deploy, and a web service cannot share files with a separate worker. Use object storage (`DOCUMENTS_DISK=s3`, Cloudflare R2 recommended) so uploads and the queue worker see the same files. Run the queue worker as its own process. Put Postgres in the same region as the app; a remote cloud database from a laptop will add seconds of latency per query.
-
 ## Tests
 
 ```bash
